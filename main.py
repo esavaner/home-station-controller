@@ -9,15 +9,16 @@ from machine import Pin, ADC
 ssid = 'Jamnik'
 password = '41443170'
 
-sensors = []
 
-
-def readTemp():
-    sensor = ADC(4)
-    conversion_factor = 3.3 / (65535)
-    reading = sensor.read_u16() * conversion_factor
-    temp = 27 - (reading - 0.706)/0.001721
-    return temp
+def readTemp(pin):
+    try:
+        sensor = ADC(pin)
+        conversion_factor = 3.3 / (65535)
+        reading = sensor.read_u16() * conversion_factor
+        temp = 27 - (reading - 0.706)/0.001721
+        return temp
+    except:
+        return '-.-'
 
 
 def parseURL(url):
@@ -40,22 +41,17 @@ def parseRequest(request):
     return method, path, params, body
 
 
-def readSensors():
-    output = {}
+def readSensors(sensors):
     for sensor in sensors:
-        print(sensor)
-        output[sensor['name']] = sensor['pin'].value()
-    return output
-
-
-def addSensors(params):
-    for k, val in params.items():
-        sensor = {}
-        pin = Pin(int(val), Pin.OPEN_DRAIN)
-        # pin.value(1)
-        sensor['pin'] = pin
-        sensor['name'] = k
-        sensors.append(sensor)
+        p = int(sensor['pin'])
+        if sensor['type'] is "temp":
+            t = readTemp(p)
+            sensor['value'] = t
+        else:
+            pin = Pin(p, Pin.OPEN_DRAIN)
+            pin.value(1)
+            sensor['value'] = not bool(pin.value())
+    print(sensors)
     return sensors
 
 
@@ -87,8 +83,6 @@ s.listen(5)
 
 print('listening on', addr)
 
-print(readTemp())
-
 while True:
     try:
         cl, addr = s.accept()
@@ -99,11 +93,9 @@ while True:
         print(method, path, params, body)
         response = None
         if path == '/read':
-            response = readSensors()
-        elif path == '/add':
-            response = addSensors(params)
+            response = readSensors(body)
         elif path == '/check':
-            response = str({status: 'ok'})
+            response = str({'status': 'ok'})
 
         cl.send('HTTP/1.0 200 OK\r\nContent-type: application/json\r\n\r\n')
         cl.send(str(response))
