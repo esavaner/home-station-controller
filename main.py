@@ -6,8 +6,8 @@ import time
 
 from machine import Pin, ADC
 
-ssid = 'Jamnik'
-password = '41443170'
+ssid = 'NETWORK_LOGIN'
+password = 'NETWORK_PASSWORD'
 
 
 def readTemp(pin):
