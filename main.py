@@ -93,12 +93,12 @@ while True:
         print(method, path, params, body)
         response = None
         if path == '/read':
-            response = readSensors(body)
+            response = readSensors(body['sensors'])
         elif path == '/check':
             response = str({'status': 'ok'})
 
         cl.send('HTTP/1.0 200 OK\r\nContent-type: application/json\r\n\r\n')
-        cl.send(str(response))
+        cl.send(json.dumps(response))
         cl.close()
 
     except OSError as e:
