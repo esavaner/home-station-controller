@@ -8,6 +8,7 @@ from machine import Pin, ADC
 
 ssid = 'NETWORK_LOGIN'
 password = 'NETWORK_PASSWORD'
+allowed_hosts = ['192.168.', 'localhost:3000']
 
 
 def readTemp(pin):
@@ -67,12 +68,13 @@ while max_wait > 0:
     print('waiting for connection...')
     time.sleep(1)
 
+ip = ''
 if wlan.status() != 3:
     raise RuntimeError('network connection failed')
 else:
     print('connected')
-    status = wlan.ifconfig()
-    print('ip = ' + status[0])
+    ip = wlan.ifconfig()[0]
+    print('ip = ' + ip)
 
 
 addr = socket.getaddrinfo('0.0.0.0', 80)[0][-1]
@@ -96,8 +98,12 @@ while True:
             response = readSensors(body['sensors'])
         elif path == '/check':
             response = str({'status': 'ok'})
+        elif path == '/temp':
+            response = readTemp(4)
 
-        cl.send('HTTP/1.0 200 OK\r\nContent-type: application/json\r\n\r\n')
+        host = addr[0] if any(h in addr[0] for h in allowed_hosts) else ip
+        cl.send(
+            f'HTTP/1.0 200 OK\r\nContent-type: application/json\r\nAccess-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept\r\nAccess-Control-Allow-Origin: *\r\n\r\n')
         cl.send(json.dumps(response))
         cl.close()
 
